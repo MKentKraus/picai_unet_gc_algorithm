@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import torchsummary
 import json
 from pathlib import Path
 import numpy as np
@@ -124,7 +125,9 @@ class csPCaAlgorithm(SegmentationAlgorithm):
                 })
 
         model = neural_network_for_run(args=args, device=self.device)
-        print(model)
+        torchsummary.summary(model, input_size=(3, 20, 256, 256)) #This is used to understand the dimensions in the model. 
+
+
         self.models += [model] 
 
     # generate + save predictions, given images
@@ -167,11 +170,10 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         # test-time augmentation (horizontal flipping)
         img_for_pred = [preproc_img.to(self.device)]
         img_for_pred += [torch.flip(preproc_img, [4]).to(self.device)]
-
+        print(img_for_pred[0].shape)
         # begin inference
         outputs = []
         print("Generating Predictions ...")
-  
         # for each member model in ensemble
         for p in range(len(self.models)):
 
@@ -180,7 +182,6 @@ class csPCaAlgorithm(SegmentationAlgorithm):
 
             # scope to disable gradient updates
             with torch.no_grad():
-                # aggregate predictions for all tta samples
                 preds = [
                     torch.sigmoid(self.models[p](x))[:, 1, ...].detach().cpu().numpy()
                     for x in img_for_pred
