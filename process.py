@@ -118,47 +118,14 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         self.models = []
         model_arch = ['unet']
         model_folds = [range(5)]
-
-        # for each given architecture
-        for arch_name, folds in zip(model_arch, model_folds):
-
-            # for each trained 5-fold instance of a given architecture
-            for fold in folds:
-                # path to trained weights for this architecture + fold (e.g. 'unet_F4.pt')
-                checkpoint_path = self.algorithm_weights_dir / f'{arch_name}_F{fold}.pt'
-
-                # skip if model was not trained for this fold
-                if not checkpoint_path.exists():
-                    continue
-
-                # define the model specifications used for initialization at train-time
-                # note: if the default hyperparam listed in picai_baseline was used,
-                # passing arguments 'image_shape', 'num_channels', 'num_classes' and
-                # 'model_type' via function 'get_default_hyperparams' is enough.
-                # otherwise arguments 'model_strides' and 'model_features' must also
-                # be explicitly passed directly to function 'neural_network_for_run'
-                args = get_default_hyperparams({
-                    'model_type': arch_name,
+        args = get_default_hyperparams({
+                    'model_type': "unet",
                     **self.img_spec
                 })
 
-                model = neural_network_for_run(args=args, device=self.device)
-
-                # load trained weights for the fold
-                checkpoint = torch.load(checkpoint_path)
-                print(f"Loading weights from {checkpoint_path}")
-                model.load_state_dict(checkpoint['model_state_dict'])
-                model.to(self.device)
-                self.models += [model]
-                print("Complete.")
-                print("-"*100)
-
-        # display error/success message
-        if len(self.models) == 0:
-            raise Exception("No models have been found/initialized.")
-        else:
-            print(f"Success! {len(self.models)} model(s) have been initialized.")
-            print("-"*100)
+        model = neural_network_for_run(args=args, device=self.device)
+        print(model)
+        self.models += [model] 
 
     # generate + save predictions, given images
     def predict(self):
@@ -274,6 +241,10 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         # save case-level likelihood
         with open(str(self.case_level_likelihood_output_file), 'w') as f:
             json.dump(float(np.max(cspca_det_map_npy)), f)
+    """  
+    def predict():
+        print("done")
+    """
 
 if __name__ == "__main__":
     csPCaAlgorithm().predict()
