@@ -242,10 +242,6 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         # save case-level likelihood
         with open(str(self.case_level_likelihood_output_file), 'w') as f:
             json.dump(float(np.max(cspca_det_map_npy)), f)
-    """  
-    def predict():
-        print("done")
-    """
 
 if __name__ == "__main__":
     csPCaAlgorithm().predict()
