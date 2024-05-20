@@ -117,8 +117,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
 
         # load trained algorithm architecture + weights
         self.models = []
-        model_arch = ['unet']
-        model_folds = [range(5)]
+
         args = get_default_hyperparams({
                     'model_type': "unet",
                     **self.img_spec
@@ -126,6 +125,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
 
         model = neural_network_for_run(args=args, device=self.device)
         torchsummary.summary(model, input_size=(3, 20, 256, 256)) #This is used to understand the dimensions in the model. 
+
 
 
         self.models += [model] 
