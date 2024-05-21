@@ -102,6 +102,8 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         else:
             self.prostate_volume = None  # value is missing, if not reported
 
+
+        self.cls = torch.tensor([self.age, self.psa, self.psad, self.prostate_volume])
         # extract available acquisition metadata (not used for this example)
         self.scanner_manufacturer = self.clinical_info["scanner_manufacturer"]
         self.scanner_model_name = self.clinical_info["scanner_model_name"]
@@ -124,7 +126,8 @@ class csPCaAlgorithm(SegmentationAlgorithm):
                 })
 
         model = neural_network_for_run(args=args, device=self.device)
-        torchsummary.summary(model, input_size=(3, 20, 256, 256)) #This is used to understand the dimensions in the model. 
+        print(model)
+        #torchsummary.summary(model, input_size=(3, 20, 256, 256)) #This is used to understand the dimensions in the model. 
 
 
 
@@ -170,7 +173,6 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         # test-time augmentation (horizontal flipping)
         img_for_pred = [preproc_img.to(self.device)]
         img_for_pred += [torch.flip(preproc_img, [4]).to(self.device)]
-        print(img_for_pred[0].shape)
         # begin inference
         outputs = []
         print("Generating Predictions ...")
@@ -183,7 +185,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
             # scope to disable gradient updates
             with torch.no_grad():
                 preds = [
-                    torch.sigmoid(self.models[p](x))[:, 1, ...].detach().cpu().numpy()
+                    torch.sigmoid(self.models[p](x, self.cls))[:, 1, ...].detach().cpu().numpy()
                     for x in img_for_pred
                 ]
 
