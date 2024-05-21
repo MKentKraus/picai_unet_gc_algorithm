@@ -9,4 +9,4 @@ torchvision>=0.10.0+cu111
 threadpoolctl>=3.1.0
 monai>=0.8.0
 batchgenerators>=0.23
-git+https://github.com/DIAGNijmegen/picai_baseline
+git+https://github.com/MKentKraus/picai_baseline@logistic_regression
