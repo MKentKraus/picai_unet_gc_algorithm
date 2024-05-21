@@ -124,7 +124,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
                 })
 
         model = neural_network_for_run(args=args, device=self.device)
-        torchsummary.summary(model, input_size=(3, 20, 256, 256)) #This is used to understand the dimensions in the model. 
+        #torchsummary.summary(model, input_size=(3, 20, 256, 256)) #This is used to understand the dimensions in the model. 
 
 
 
@@ -182,9 +182,13 @@ class csPCaAlgorithm(SegmentationAlgorithm):
 
             # scope to disable gradient updates
             with torch.no_grad():
-                preds = [
-                    torch.sigmoid(self.models[p](x))[:, 1, ...].detach().cpu().numpy()
+                full_preds = [
+                    self.models[p](x, torch.tensor([self.age, self.psad, self.psa, self.prostate_volume]))
                     for x in img_for_pred
+                ]
+                preds = [
+                    torch.sigmoid(full_pred[0])[:, 1, ...].detach().cpu().numpy()
+                    for full_pred in full_preds
                 ]
 
                 # revert horizontally flipped tta image
@@ -241,7 +245,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
 
         # save case-level likelihood
         with open(str(self.case_level_likelihood_output_file), 'w') as f:
-            json.dump(float(np.max(cspca_det_map_npy)), f)
+            json.dump(float(full_preds[0][1]), f)
 
 if __name__ == "__main__":
     csPCaAlgorithm().predict()
