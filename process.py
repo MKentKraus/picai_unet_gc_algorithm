@@ -18,9 +18,14 @@ from pathlib import Path
 import numpy as np
 import SimpleITK as sitk
 import torch
+
 from evalutils import SegmentationAlgorithm
 from evalutils.validators import (UniqueImagesValidator,
                                   UniquePathIndicesValidator)
+
+from picai_baseline.unet.training_setup.image_reader import SimpleITKDataset
+
+
 from picai_baseline.unet.training_setup.default_hyperparam import \
     get_default_hyperparams
 from picai_baseline.unet.training_setup.neural_network_selector import \
@@ -103,7 +108,12 @@ class csPCaAlgorithm(SegmentationAlgorithm):
             self.prostate_volume = None  # value is missing, if not reported
 
 
-        self.cls = torch.tensor([self.age, self.psa, self.psad, self.prostate_volume])
+        self.cls = [self.age, self.psa, self.psad, self.prostate_volume]
+
+        self.Missing_Values_filler = SimpleITKDataset(self.image_input_dirs) #this is used only for metadata processing, does not work as a dataset
+        self.cls = torch.tensor(self.Missing_Values_filler.fill_in_missing(self.cls, ["0010|1010", "PSAD_REPORT", "PSA_REPORT", "PROSTATE_VOLUME_REPORT"],
+                                        [66, 8.5, 0.15, 57.]) ) #missing values are filled in. 
+
         # extract available acquisition metadata (not used for this example)
         self.scanner_manufacturer = self.clinical_info["scanner_manufacturer"]
         self.scanner_model_name = self.clinical_info["scanner_model_name"]
@@ -136,7 +146,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
 
 
                 args = get_default_hyperparams({
-                            'model_type': 'unet',
+                            'model_type': model_arch,
                             **self.img_spec
                         })
 
@@ -216,7 +226,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
             # scope to disable gradient updates
             with torch.no_grad():
                 full_preds = [
-                    self.models[p](x, torch.tensor([self.age, self.psad, self.psa, self.prostate_volume]))
+                    self.models[p](x, self.cls )
                     for x in img_for_pred
                 ]
                 preds = [
