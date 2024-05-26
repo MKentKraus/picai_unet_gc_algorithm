@@ -54,13 +54,13 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         # note: these are fixed paths that should not be modified
 
         # directory to model weights
-        self.algorithm_weights_dir = Path("weights/")
+        self.algorithm_weights_dir = Path("/opt/algorithm/weights/")
 
         # path to image files
         self.image_input_dirs = [
-            "test/images/transverse-t2-prostate-mri/",
-            "test/images/transverse-adc-prostate-mri/",
-            "test/images/transverse-hbv-prostate-mri/",
+            "/input/images/transverse-t2-prostate-mri/",
+            "/input/images/transverse-adc-prostate-mri/",
+            "/input/images/transverse-hbv-prostate-mri/",
             # "/input/images/coronal-t2-prostate-mri/",  # not used in this algorithm
             # "/input/images/sagittal-t2-prostate-mri/"  # not used in this algorithm
         ]
@@ -68,12 +68,12 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         self.image_input_paths = [list(Path(x).glob("*.mha"))[0] for x in self.image_input_dirs]
 
         # load clinical information
-        with open("test/clinical-information-prostate-mri.json") as fp:
-            self.clinical_info = json.load(fp)
+        with open("/input/clinical-information-prostate-mri.json") as fp:
+             self.clinical_info = json.load(fp)
 
         # path to output files
-        self.detection_map_output_path = Path("test/images/cspca-detection-map/cspca_detection_map.mha")
-        self.case_level_likelihood_output_file = Path("test/cspca-case-level-likelihood.json")
+        self.detection_map_output_path = Path("/output/images/cspca-detection-map/cspca_detection_map.mha")
+        self.case_level_likelihood_output_file = Path("/output/cspca-case-level-likelihood.json")
 
         # create output directory
         self.detection_map_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -119,15 +119,46 @@ class csPCaAlgorithm(SegmentationAlgorithm):
 
         # load trained algorithm architecture + weights
         self.models = []
+        model_arch = ['unet']
+        model_folds = [range(5)]
 
-        args = get_default_hyperparams({
-                    'model_type': "unet",
-                    **self.img_spec
-                })
+        # for each given architecture
+        for arch_name, folds in zip(model_arch, model_folds):
 
-        model = neural_network_for_run(args=args, device=self.device)
-        print(model)
+            # for each trained 5-fold instance of a given architecture
+            for fold in folds:
+                # path to trained weights for this architecture + fold (e.g. 'unet_F4.pt')
+                checkpoint_path = self.algorithm_weights_dir / f'{arch_name}_F{fold}.pt'
+
+                # skip if model was not trained for this fold
+                if not checkpoint_path.exists():
+                    continue
+
+
+                args = get_default_hyperparams({
+                            'model_type': 'unet',
+                            **self.img_spec
+                        })
+
+                model = neural_network_for_run(args=args, device=self.device)
+                # load trained weights for the fold
+                checkpoint = torch.load(checkpoint_path)
+                print(f"Loading weights from {checkpoint_path}")
+                model.load_state_dict(checkpoint['model_state_dict'])
+                model.to(self.device)
+                self.models += [model]
+                print("Complete.")
+                print("-"*100)
+
+
+
         #torchsummary.summary(model, input_size=(3, 20, 256, 256)) #This is used to understand the dimensions in the model. 
+
+        if len(self.models) == 0:
+            raise Exception("No models have been found/initialized.")
+        else:
+            print(f"Success! {len(self.models)} model(s) have been initialized.")
+            print("-"*100)
 
 
 
