@@ -146,7 +146,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
 
 
                 args = get_default_hyperparams({
-                            'model_type': model_arch,
+                            'model_type': arch_name,
                             **self.img_spec
                         })
 
