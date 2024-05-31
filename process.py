@@ -113,7 +113,10 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         self.Missing_Values_filler = SimpleITKDataset(self.image_input_dirs) #this is used only for metadata processing, does not work as a dataset
         self.cls = torch.tensor(self.Missing_Values_filler.fill_in_missing(self.cls, ["0010|1010", "PSAD_REPORT", "PSA_REPORT", "PROSTATE_VOLUME_REPORT"],
                                         [66, 8.5, 0.15, 57.]) ) #missing values are filled in. 
-
+        self.cls = self.Missing_Values_filler.log_values(self.cls, ["0010|1010", "PSAD_REPORT", "PSA_REPORT", "PROSTATE_VOLUME_REPORT"])
+        self.cls = self.Missing_Values_filler.normalize_values(self.cls, ["0010|1010", "PSAD_REPORT", "PSA_REPORT", "PROSTATE_VOLUME_REPORT"],  [65.595333, 2.300051, 0.184540, 4.059110], # means computed from training population after filling in computable values and applying log1p transformation
+                                        [7.191527, 0.639685, 0.187901, 0.512711])
+      
         # extract available acquisition metadata (not used for this example)
         self.scanner_manufacturer = self.clinical_info["scanner_manufacturer"]
         self.scanner_model_name = self.clinical_info["scanner_model_name"]
