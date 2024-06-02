@@ -29,7 +29,7 @@ from picai_baseline.unet.training_setup.image_reader import SimpleITKDataset
 from picai_baseline.unet.training_setup.default_hyperparam import \
     get_default_hyperparams
 from picai_baseline.unet.training_setup.neural_network_selector import \
-    neural_network_for_run
+    neural_network_for_run_cls
 from picai_baseline.unet.training_setup.preprocess_utils import z_score_norm
 from picai_prep.data_utils import atomic_image_write
 from picai_prep.preprocessing import Sample, PreprocessingSettings, crop_or_pad, resample_img
@@ -116,6 +116,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
         self.cls = self.Missing_Values_filler.log_values(self.cls, ["0010|1010", "PSAD_REPORT", "PSA_REPORT", "PROSTATE_VOLUME_REPORT"])
         self.cls = self.Missing_Values_filler.normalize_values(self.cls, ["0010|1010", "PSAD_REPORT", "PSA_REPORT", "PROSTATE_VOLUME_REPORT"],  [65.595333, 2.300051, 0.184540, 4.059110], # means computed from training population after filling in computable values and applying log1p transformation
                                         [7.191527, 0.639685, 0.187901, 0.512711])
+        self.cls = self.cls.to(self.device)
       
         # extract available acquisition metadata (not used for this example)
         self.scanner_manufacturer = self.clinical_info["scanner_manufacturer"]
@@ -153,7 +154,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
                             **self.img_spec
                         })
 
-                model = neural_network_for_run(args=args, device=self.device)
+                model = neural_network_for_run_cls(args=args, device=self.device)
                 # load trained weights for the fold
                 checkpoint = torch.load(checkpoint_path)
                 print(f"Loading weights from {checkpoint_path}")
