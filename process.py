@@ -29,7 +29,7 @@ from picai_baseline.unet.training_setup.image_reader import SimpleITKDataset
 from picai_baseline.unet.training_setup.default_hyperparam import \
     get_default_hyperparams
 from picai_baseline.unet.training_setup.neural_network_selector import \
-    neural_network_for_run_cls
+    neural_network_for_run
 from picai_baseline.unet.training_setup.preprocess_utils import z_score_norm
 from picai_prep.data_utils import atomic_image_write
 from picai_prep.preprocessing import Sample, PreprocessingSettings, crop_or_pad, resample_img
@@ -154,7 +154,7 @@ class csPCaAlgorithm(SegmentationAlgorithm):
                             **self.img_spec
                         })
 
-                model = neural_network_for_run_cls(args=args, device=self.device)
+                model = neural_network_for_run(args=args, device=self.device)
                 # load trained weights for the fold
                 checkpoint = torch.load(checkpoint_path)
                 print(f"Loading weights from {checkpoint_path}")
